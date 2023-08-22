@@ -1,0 +1,85 @@
+import datetime
+import json
+import math
+
+# Load existing data from a file
+def load_data():
+    try:
+        with open('study_data.json', 'r') as file:
+            return json.load(file)
+    except FileNotFoundError:
+        return {}
+
+# Save data to a file
+def save_data(data):
+    with open('study_data.json', 'w') as file:
+        json.dump(data, file, indent=4)
+
+# Function to add a new chapter study record
+def add_chapter(subject, chapter):
+    finished_date = input("Enter the date you finished studying the chapter (dd/mm/yyyy): ")
+    finished_date = datetime.datetime.strptime(finished_date, '%d/%m/%Y').date()
+
+    current_date = datetime.datetime.now().date()
+    
+    days_diff = (current_date - finished_date).days
+    x = max(1, int(math.sqrt(days_diff)))  # x is at least 1
+    
+    revision_date = current_date + datetime.timedelta(days=x**2)
+    
+    data = load_data()
+    if subject not in data:
+        data[subject] = {}
+    
+    if chapter in data.get(subject, {}):
+        print(f"Chapter '{chapter}' of {subject} already exists. Skipping addition.")
+    else:
+        data[subject][chapter] = {
+            'studied_date': finished_date.strftime('%d/%m/%Y'),
+            'revision_date': revision_date.strftime('%d/%m/%Y')
+        }
+        save_data(data)
+        print(f"Chapter '{chapter}' of {subject} added. Revision date: {revision_date.strftime('%d/%m/%Y')}")
+
+# Function to show chapters due for revision
+def show_due_chapters():
+    current_date = datetime.datetime.now().date()
+    data = load_data()
+    
+    due_chapters = []
+    for subject, chapters in data.items():
+        for chapter, dates in chapters.items():
+            revision_date = datetime.datetime.strptime(dates['revision_date'], '%d/%m/%Y').date()  # Adjust date format
+            if revision_date <= current_date:
+                due_chapters.append(f"{subject}: {chapter} (Studied: {dates['studied_date']}, Due: {revision_date.strftime('%d/%m/%Y')})")  # Adjust date format
+    
+    if due_chapters:
+        print("Chapters due for revision:")
+        for due_chapter in due_chapters:
+            print(due_chapter)
+    else:
+        print("No revision today.")
+
+# Main program loop
+def main():
+    while True:
+        print("\n1. Add a new chapter")
+        print("2. Show chapters due for revision")
+        print("3. Exit")
+        
+        choice = input("Select an option: ")
+        
+        if choice == '1':
+            subject = input("Enter subject (Physics/Chemistry/Maths): ")
+            chapter = input("Enter chapter name: ")
+            add_chapter(subject, chapter)
+        elif choice == '2':
+            show_due_chapters()
+        elif choice == '3':
+            print("Exiting the app.")
+            break
+        else:
+            print("Invalid choice. Please select again.")
+
+if __name__ == '__main__':
+    main()
